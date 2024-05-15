@@ -29,6 +29,11 @@ export default function RootLayout({
         >
           <Navbar />
           <main className="max-w-screen-md mx-auto px-4 pt-8">{children}</main>
+          <footer className="max-w-screen-md mx-auto px-4 py-8">
+            <p className="text-center text-gray-600 dark:text-gray-300 py-3">
+              © {new Date().getFullYear()} Maor Elimelech
+            </p>
+          </footer>
         </ThemeProvider>
       </body>
     </html>

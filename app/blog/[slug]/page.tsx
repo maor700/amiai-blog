@@ -8,51 +8,6 @@ import Image from "next/image";
 
 export const revalidate = 30; // revalidate at most 30 seconds
 
-// export default {
-//   name: 'comment',
-//   type: 'document',
-//   title: 'Comment',
-//   icon: CommentIcon,
-//   fields: [
-//     {
-//       name: 'name',
-//       type: 'string',
-//     },
-//     {
-//       title: 'Approved',
-//       name: 'approved',
-//       type: 'boolean',
-//       description: "Comments won't show on the site without approval",
-//     },
-//     {
-//       name: 'email',
-//       type: 'string',
-//     },
-//     {
-//       name: 'comment',
-//       type: 'text',
-//     },
-//     {
-//       name: 'post',
-//       type: 'reference',
-//       to: [{ type: 'post' }],
-//     },
-//   ],
-//   preview: {
-//     select: {
-//       name: 'name',
-//       comment: 'comment',
-//       post: 'post.title',
-//     },
-//     prepare({ name, comment, post }: { name: string; comment: string; post: string }) {
-//       return {
-//         title: `${name} on ${post}`,
-//         subtitle: comment,
-//       }
-//     },
-//   },
-// }
-
 async function getData(slug: string) {
 
   const query = `
@@ -63,16 +18,6 @@ async function getData(slug: string) {
     image,
     imageTitle,
     description,
-    'comments': *[
-      _type == "comment" && post._ref == ^._id
-    ]{
-      _id,
-      name,
-      comment,
-      approved,
-      email,
-      createdAt
-    },
     _id,
     body,
     author->{
@@ -90,8 +35,7 @@ export default async function BlogArticle({
 }: {
   params: { slug: string };
 }) {
-  const { title, publishedAt, image, body, author, comments, _id }: simpleBlogCard = await getData(params.slug) ?? {};
-  console.log(comments);
+  const { title, publishedAt, image, body, author, _id }: simpleBlogCard = await getData(params.slug) ?? {};
   const authorImage = urlFor(author.image).url() || "";
 
   const publishedAtDate = new Date(publishedAt).toLocaleDateString("he-il", {
@@ -158,9 +102,7 @@ export default async function BlogArticle({
       <div className="mt-16 prose prose-blue prose-lg dark:prose-invert prose-li:marker:text-primary prose-a:text-primary">
         <PortableText value={body as any} components={components} />
       </div>
-
-      <Comments comments={comments} />
-      <Form _id={_id} />
+      <Comments postId={_id} />
     </div>
   );
 }
