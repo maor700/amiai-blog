@@ -40,11 +40,12 @@ export default {
       comment: 'comment',
       post: 'post.title',
     },
-    prepare({ name, comment, post }: { name: string; comment: string; post: string }) {
+    prepare(value: any) {
+      const { name, comment, post } = value;
       return {
-        title: `${name} on ${post}`,
-        subtitle: comment,
-      }
+        title: name && post ? `${name} on ${post}` : 'Untitled',
+        subtitle: comment ?? '',
+      };
     },
   },
 }

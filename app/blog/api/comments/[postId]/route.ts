@@ -1,7 +1,7 @@
 import { snClient } from '@/app/lib/sanity';
 import { Command } from 'lucide-react';
 import { NextApiRequest } from 'next';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 type CommentItem = {
     _id: string;
@@ -14,7 +14,7 @@ function sanitize(str: string) {
     return str.replace(/<[^>]*>?/gm, '');
 }
 
-export const GET = async (req: NextApiRequest, context: any) => {
+export const GET = async (req: NextRequest, context: any) => {
     const {  postId } = context.params;
     console.log(postId);
     try {
