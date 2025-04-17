@@ -51,16 +51,15 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--border);
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 }
 
-.app-wrapper {
-  font-family: "Noto Sans Hebrew";
-}
+/* The font is now applied via the className in layout.tsx */
 
 .main-section{
   min-height: calc(100vh - 7rem);
