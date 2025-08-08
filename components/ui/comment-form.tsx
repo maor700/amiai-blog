@@ -1,5 +1,6 @@
 "use client"
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { v4 as uuidv4 } from 'uuid'
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage'
 import WysiwygEditor from './wysiwyg-editor'
 import { getTextContent } from '@/lib/utils/html-sanitizer'
@@ -47,12 +48,14 @@ export default function CommentForm({ postId, onSubmit, parentId, onRefreshComme
       return;
     }
 
+    const correlationId = uuidv4();
     const data = {
       _id: postId,
       name: name.trim(),
       email: email.trim() || 'anonymous@example.com',
       comment: comment.trim(),
-      parentId: parentId
+      parentId: parentId,
+      correlationId: correlationId
     };
     
     if (rememberMe) {
@@ -71,10 +74,7 @@ export default function CommentForm({ postId, onSubmit, parentId, onRefreshComme
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...data,
-          correlationId: data.correlationId // Will be set by submitHandler
-        }),
+        body: JSON.stringify(data),
       });
   
       if (!response.ok) {

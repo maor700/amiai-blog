@@ -202,12 +202,13 @@ export default {
     prepare(value: any) {
       const { name, comment, post, status, depth, createdAt } = value;
       const indent = '→ '.repeat(depth || 0);
-      const statusEmoji = {
+      const statusEmojiMap = {
         pending: '⏳',
         approved: '✅',
         rejected: '❌',
         spam: '🚫'
-      }[status] || '❓';
+      } as const;
+      const statusEmoji = statusEmojiMap[status as keyof typeof statusEmojiMap] || '❓';
       
       return {
         title: `${indent}${statusEmoji} ${name} on ${post}`,
