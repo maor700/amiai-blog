@@ -173,7 +173,7 @@ export default function WysiwygEditor({
               : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
           }`}
         >
-          " ציטוט
+          &quot; ציטוט
         </button>
         
         <div className="w-px h-6 bg-gray-300 mx-1" />

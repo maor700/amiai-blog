@@ -97,7 +97,7 @@ export default function CommentForm({ postId, onSubmit, parentId, onRefreshComme
         setError('');
       }, 3000);
     }
-  }, [postId, parentId, name, email, comment, rememberMe, onSubmit, setSavedName, setSavedEmail]);
+  }, [postId, parentId, name, email, comment, rememberMe, onSubmit, setSavedName, setSavedEmail, onRefreshComments]);
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="w-full relative bg-white rounded-lg border border-gray-200 p-6" dir="rtl">
