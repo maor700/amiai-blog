@@ -1,6 +1,6 @@
 "use client";
 import { use, useCallback, useEffect, useState } from 'react';
-import Date from './date'
+import DateComponent from './date'
 import Form from './form';
 import { Expander } from './Expander';
 
@@ -10,6 +10,7 @@ interface CommentProps {
   name: string;
   email: string;
   comment: string;
+  isOptimistic?: boolean;
 }
 
 interface CommentsProps {
@@ -18,15 +19,45 @@ interface CommentsProps {
 
 export default function Comments({ postId }: CommentsProps) {
   const [comments, setComments] = useState<CommentProps[]>([]);
-  const [revision, setRevision] = useState(0);
-  const submitHandler = useCallback(() => {
-    setTimeout(() => {
-      setRevision((r) => r + 1);
-    }, 10000);
+  const [optimisticComments, setOptimisticComments] = useState<CommentProps[]>([]);
+  const [failedComments, setFailedComments] = useState<Set<string>>(new Set());
+  
+  const submitHandler = useCallback((commentData: any, success: boolean, error?: boolean) => {
+    const optimisticId = `optimistic-${Date.now()}`;
+    
+    if (success && !error) {
+      const newComment: CommentProps = {
+        _id: optimisticId,
+        createdAt: new Date().toISOString(),
+        name: commentData.name,
+        email: commentData.email,
+        comment: commentData.comment,
+        isOptimistic: true
+      };
+      
+      setOptimisticComments(prev => [newComment, ...prev]);
+      
+      // After successful save, convert optimistic to permanent
+      setTimeout(() => {
+        setOptimisticComments(prev => {
+          const savedComment = prev.find(c => c._id === optimisticId);
+          if (savedComment) {
+            setComments(prevComments => [
+              { ...savedComment, isOptimistic: false },
+              ...prevComments
+            ]);
+            return prev.filter(c => c._id !== optimisticId);
+          }
+          return prev;
+        });
+      }, 2000);
+    } else if (error) {
+      // Handle error case
+      setFailedComments(prev => new Set(prev).add(commentData.tempId || optimisticId));
+    }
   }, []);
 
   useEffect(() => {
-    // get root of the current domain
     const commentsUrl = `api/comments/${postId}`;
     fetch(commentsUrl).then((res) => {
       if (!res.ok) {
@@ -34,8 +65,7 @@ export default function Comments({ postId }: CommentsProps) {
       }
       return res.json();
     }).then(setComments);
-    // This code will only run on the client-side
-  }, [postId, revision]);
+  }, [postId]);
 
   return (
     <>
@@ -48,12 +78,16 @@ export default function Comments({ postId }: CommentsProps) {
       ButtonText={{ expand: 'הצג את כל התגובות', collapse: 'צמצם את התגובות' }}
       >
         <ul>
-          {comments?.map(({ _id, createdAt, name, email, comment }) => (
-            <li key={_id} className="mb-5">
+          {[...optimisticComments, ...comments]?.map(({ _id, createdAt, name, email, comment, isOptimistic }) => (
+            <li key={_id} className={`mb-5 ${isOptimistic ? 'opacity-70' : ''} ${failedComments.has(_id) ? 'border-red-500 border-l-4 pl-4' : ''}`}>
               <h4 className="flex gap-1 justify-between mb-2 leading-tight opacity-50">
-                <span>{name}</span>
+                <span>
+                  {name} 
+                  {isOptimistic && !failedComments.has(_id) && <span className="text-xs text-blue-600">(שולח...)</span>}
+                  {failedComments.has(_id) && <span className="text-xs text-red-600">(נכשל - נסה שוב)</span>}
+                </span>
                 <span className='text-sm'>
-                  <Date dateString={createdAt} />
+                  <DateComponent dateString={createdAt} />
                 </span>
               </h4>
               <p>{comment}</p>

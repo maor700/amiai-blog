@@ -3,7 +3,7 @@ import { createRef, use, useCallback, useState } from 'react'
 
 interface FormProps {
   _id: string,
-  onSubmitSuccess: (response: any) => void
+  onSubmitSuccess: (commentData: any, success: boolean, error?: boolean) => void
 }
 
 export default function Form({ _id, onSubmitSuccess }: FormProps) {
@@ -12,9 +12,24 @@ export default function Form({ _id, onSubmitSuccess }: FormProps) {
   const [error, setError] = useState('');
   const formElm = createRef<HTMLFormElement>();
 
-  const handleSubmit = useCallback(async (event: any) => {
+  const handleSubmit = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setIsLoading(true);
-    const data = Object.fromEntries([...event.entries()]) as any;
+    setError('');
+    
+    const formData = new FormData(event.currentTarget);
+    const data = {
+      _id: formData.get('_id') as string,
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+      comment: formData.get('comment') as string,
+    };
+    
+    // Show optimistic update immediately
+    onSubmitSuccess(data, true, false);
+    formElm.current?.reset();
+    setIsSubmitted(true);
+    
     try {
       const commentsUrl = `api/comments/${_id}`;
       const response = await fetch(commentsUrl, {
@@ -25,24 +40,24 @@ export default function Form({ _id, onSubmitSuccess }: FormProps) {
         body: JSON.stringify(data),
       });
   
-      if (response.ok) {
-        setIsSubmitted(true);
-        formElm.current?.reset();
-        onSubmitSuccess(data);
+      if (!response.ok) {
+        throw new Error('Failed to submit');
       }
+      // Comment saved successfully - optimistic update will convert to permanent
     } catch (error) {
       setError('ארעה שגיאה בשליחת התגובה');
+      onSubmitSuccess(data, false, true);
     } finally {
       setIsLoading(false);
       setTimeout(() => {
         setIsSubmitted(false);
         setError('');
-      }, 5000);
+      }, 3000);
     }
   }, [_id, formElm, onSubmitSuccess]);
 
   return (
-    <form ref={formElm} action={handleSubmit} id='add-comment-form' className="w-full max-w-lg relative ">
+    <form ref={formElm} onSubmit={handleSubmit} id='add-comment-form' className="w-full max-w-lg relative ">
       <div className={`absolute top-0 left-0 w-full h-full bg-white bg-opacity-50 flex items-center justify-center ${isLoading ? 'visible' : 'hidden'}
       `} role="status">
         <svg aria-hidden="true" className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -81,11 +96,12 @@ export default function Form({ _id, onSubmitSuccess }: FormProps) {
           required
         />
       </label>
-      <input
-       onClick={()=>{setIsLoading(true);}}
+      <button
         type="submit"
         className="focus:shadow-outline rounded bg-blue-900 text-white py-2 px-4 rounded-sm hover:bg-blue-800 cursor-pointer focus:outline-none"
-      />
+      >
+        שלח תגובה
+      </button>
       {isLoading && <p>שולח תגובה...</p>}
       {isSubmitted && !error && <p>התגובה נשלחה בהצלחה</p>}
       {error && <p>{error}</p>}

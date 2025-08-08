@@ -1,7 +1,7 @@
 import { components } from "@/app/components/contentComponents/portableTextComponents";
 import { fullBlog, simpleBlogCard } from "@/app/lib/interface";
 import { snClient, urlFor } from "@/app/lib/sanity";
-import Comments from "@/components/ui/comments";
+import CommentsEnhanced from "@/components/ui/comments-enhanced";
 import Form from "@/components/ui/form";
 import { PortableText } from "@portabletext/react";
 import Image from "next/image";
@@ -99,7 +99,7 @@ export default async function BlogArticle({
       <div className="mt-16 prose prose-blue prose-lg dark:prose-invert prose-li:marker:text-primary prose-a:text-primary">
         <PortableText value={body as any} components={components} />
       </div>
-      <Comments postId={_id} />
+      <CommentsEnhanced postId={_id} />
     </div>
   );
 }
