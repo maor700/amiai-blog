@@ -13,6 +13,7 @@ interface CommentProps {
   parentId?: string;
   isOptimistic?: boolean;
   correlationId?: string;
+  reactions?: { likes: number; dislikes?: number };
 }
 
 interface CommentsEnhancedProps {

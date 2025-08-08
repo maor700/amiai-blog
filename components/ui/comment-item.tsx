@@ -18,6 +18,7 @@ interface CommentItemProps {
   isFailed?: boolean;
   parentId?: string;
   replies?: CommentItemProps[];
+  reactions?: { likes: number; dislikes?: number };
   onReply?: (parentId: string, replyData: any) => void;
   depth?: number;
   postId?: string;
@@ -33,6 +34,7 @@ export default function CommentItem({
   isOptimistic,
   isFailed,
   replies = [],
+  reactions,
   onReply,
   depth = 0,
   postId,
@@ -43,8 +45,75 @@ export default function CommentItem({
   const [replyMode, setReplyMode] = useState<'simple' | 'wysiwyg'>('simple');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const [showAllReplies, setShowAllReplies] = useState(false);
+  const [likes, setLikes] = useState(reactions?.likes || 0);
+  const [isLiking, setIsLiking] = useState(false);
+  const [hasLiked, setHasLiked] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const likedComments = localStorage.getItem('liked_comments');
+      return likedComments ? JSON.parse(likedComments).includes(_id) : false;
+    }
+    return false;
+  });
   const maxDepth = 3;
   const avatarColors = getAvatarColor(name);
+  
+  const handleLike = async () => {
+    if (isLiking || !postId) return;
+    
+    setIsLiking(true);
+    const action = hasLiked ? 'unlike' : 'like';
+    const optimisticLikes = hasLiked ? likes - 1 : likes + 1;
+    const newHasLiked = !hasLiked;
+    
+    // Optimistic update
+    setLikes(optimisticLikes);
+    setHasLiked(newHasLiked);
+    
+    // Update localStorage
+    const likedComments = JSON.parse(localStorage.getItem('liked_comments') || '[]');
+    if (newHasLiked) {
+      likedComments.push(_id);
+    } else {
+      const index = likedComments.indexOf(_id);
+      if (index > -1) likedComments.splice(index, 1);
+    }
+    localStorage.setItem('liked_comments', JSON.stringify(likedComments));
+    
+    try {
+      const response = await fetch(`/blog/api/comments/${postId}/${_id}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update like');
+      }
+      
+      const data = await response.json();
+      setLikes(data.likes);
+      
+    } catch (error) {
+      console.error('Error updating like:', error);
+      // Revert optimistic update on error
+      setLikes(likes);
+      setHasLiked(hasLiked);
+      
+      // Revert localStorage
+      const currentLikedComments = JSON.parse(localStorage.getItem('liked_comments') || '[]');
+      if (hasLiked) {
+        currentLikedComments.push(_id);
+      } else {
+        const index = currentLikedComments.indexOf(_id);
+        if (index > -1) currentLikedComments.splice(index, 1);
+      }
+      localStorage.setItem('liked_comments', JSON.stringify(currentLikedComments));
+    }
+    
+    setIsLiking(false);
+  };
   
   const handleReply = async () => {
     const textContent = getTextContent(replyText).trim();
@@ -135,39 +204,72 @@ export default function CommentItem({
           </div>
           
           <div className="flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <h4 className="font-semibold text-gray-900">{name}</h4>
-                {isFailed && (
-                  <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">נכשל</span>
-                )}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-gray-900">{name}</h4>
+                    {isFailed && (
+                      <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">נכשל</span>
+                    )}
+                  </div>
+                  <span className="text-sm text-gray-500">
+                    <DateComponent dateString={createdAt} />
+                  </span>
+                </div>
+            
+                <div className="prose prose-sm max-w-none text-gray-700" dir="rtl">
+                  {comment.includes('<') ? (
+                    // HTML content from WYSIWYG editor
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(comment) }} />
+                  ) : (
+                    // Markdown content
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {comment}
+                    </ReactMarkdown>
+                  )}
+                </div>
+                
+                <div className="mt-3 flex items-center justify-between">
+                  {!isOptimistic && depth < maxDepth && onReply && (
+                    <button
+                      onClick={() => setShowReplyForm(!showReplyForm)}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      {showReplyForm ? 'ביטול' : 'תגובה'}
+                    </button>
+                  )}
+                  
+                  {/* Like button in same line as reply button */}
+                  {!isOptimistic && (
+                    <button
+                      onClick={handleLike}
+                      disabled={isLiking}
+                      className={`flex items-center gap-1 p-2 rounded-full transition-colors ${
+                        hasLiked 
+                          ? 'text-red-600 hover:text-red-800 hover:bg-red-50' 
+                          : 'text-gray-400 hover:text-red-600 hover:bg-gray-50'
+                      } ${isLiking ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <svg 
+                        className={`w-5 h-5 transition-all ${hasLiked ? 'fill-current' : 'fill-none'}`} 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                        />
+                      </svg>
+                      {likes > 0 && (
+                        <span className="text-sm font-medium">{likes}</span>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
-              <span className="text-sm text-gray-500">
-                <DateComponent dateString={createdAt} />
-              </span>
-            </div>
-            
-            <div className="prose prose-sm max-w-none text-gray-700" dir="rtl">
-              {comment.includes('<') ? (
-                // HTML content from WYSIWYG editor
-                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(comment) }} />
-              ) : (
-                // Markdown content
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {comment}
-                </ReactMarkdown>
-              )}
-            </div>
-            
-            <div className="mt-3 flex items-center gap-4">
-              {!isOptimistic && depth < maxDepth && onReply && (
-                <button
-                  onClick={() => setShowReplyForm(!showReplyForm)}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  {showReplyForm ? 'ביטול' : 'תגובה'}
-                </button>
-              )}
             </div>
           </div>
         </div>
