@@ -6,8 +6,8 @@ import {schemaTypes} from './schemas'
 export default defineConfig({
   name: 'default',
   title: 'Ai Blog',
-  projectId: 'uk3o2e58',
-  dataset: 'production',
+  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'uk3o2e58',
+  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
 
   plugins: [deskTool(), visionTool()],
 
