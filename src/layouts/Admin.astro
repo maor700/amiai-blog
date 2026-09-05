@@ -51,6 +51,16 @@ const { title } = Astro.props;
       .post-preview { font-family: var(--font-serif); }
       .toolbar { display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; }
       .toolbar button { background: var(--faint); border-radius: 4px; padding: 0.25rem 0.6rem; }
+      .toolbar button:hover { background: var(--rule); }
+      .editor-wrap { display: grid; gap: 0.5rem; }
+      .editor { border: 1px solid var(--rule); border-radius: 4px; padding: 1rem 1.25rem; min-height: 26rem; background: var(--bg); }
+      .editor .ProseMirror { outline: none; min-height: 24rem; font-size: 1.15rem; }
+      .editor .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--muted); float: right; pointer-events: none; height: 0; }
+      .editor .ProseMirror img { max-width: 100%; margin: 1em auto; border-radius: 4px; }
+      .editor .ProseMirror img.ProseMirror-selectednode, .editor .ProseMirror .ProseMirror-selectednode { outline: 2px solid var(--fg); outline-offset: 2px; }
+      .editor .ProseMirror div[data-youtube-video] iframe, .editor .ProseMirror video { width: 100%; aspect-ratio: 16/9; height: auto; border: 0; border-radius: 4px; margin: 1em 0; }
+      .editor .ProseMirror div[data-youtube-video] { pointer-events: none; }
+      .source { font-family: ui-monospace, Menlo, monospace !important; font-size: 0.95rem !important; min-height: 26rem; direction: rtl; }
     </style>
   </head>
   <body>

@@ -179,6 +179,9 @@ html.is-dark .theme-toggle .ico-moon { opacity: 1; transform: none; }
 .prose ul, .prose ol { padding-inline-start: 1.5em; }
 .prose li + li { margin-top: 0.6em; }
 .prose img { margin: 2em auto; border-radius: 4px; }
+.prose iframe, .prose video { display: block; width: 100%; aspect-ratio: 16/9; height: auto; border: 0; border-radius: 4px; margin: 2em 0; background: #000; }
+.prose div[data-youtube-video] { margin: 2em 0; }
+.prose div[data-youtube-video] iframe { margin: 0; }
 .prose hr { border: 0; text-align: center; margin: 3em 0; }
 .prose hr::after { content: '· · ·'; color: var(--muted); letter-spacing: 0.5em; }
 .prose code { font-family: ui-monospace, Menlo, monospace; font-size: 0.85em; background: var(--faint); padding: 0.1em 0.35em; border-radius: 3px; direction: ltr; unicode-bidi: embed; }

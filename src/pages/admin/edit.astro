@@ -32,17 +32,32 @@ const today = new Date().toISOString().slice(0, 10);
       <label>תמונת כיסוי (png/jpg/webp; נשמרת כ-cover.* בתיקיית הפוסט) <input name="coverUpload" type="file" accept=".png,.jpg,.jpeg,.webp,.avif" /></label>
       <label>כיסוי נוכחי <input name="cover" readonly dir="ltr" /></label>
     </div>
-    <label>
-      <span class="row" style="justify-content:space-between"><span>גוף המאמר (Markdown)</span>
-        <span class="toolbar">
-          <button type="button" data-ins="## ">כותרת</button>
-          <button type="button" data-ins="**" data-wrap="1">מודגש</button>
-          <button type="button" data-ins="> " data-line="1">ציטוט</button>
-          <button type="button" data-ins="[טקסט](https://)">קישור</button>
-          <button type="button" data-ins="![תיאור](./image.png)">תמונה</button>
-        </span></span>
-      <textarea name="body" required></textarea>
-    </label>
+    <div class="editor-wrap">
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <span style="font-size:.85rem;color:var(--muted)">גוף המאמר</span>
+        <span class="toolbar" id="toolbar">
+          <button type="button" data-cmd="h2" title="כותרת">כותרת</button>
+          <button type="button" data-cmd="h3" title="כותרת משנה">כותרת 2</button>
+          <button type="button" data-cmd="bold"><b>ב</b></button>
+          <button type="button" data-cmd="italic"><i>נ</i></button>
+          <button type="button" data-cmd="quote">ציטוט</button>
+          <button type="button" data-cmd="ul">רשימה</button>
+          <button type="button" data-cmd="ol">ממוספרת</button>
+          <button type="button" data-cmd="link">קישור</button>
+          <button type="button" data-cmd="image">תמונה</button>
+          <button type="button" data-cmd="youtube">YouTube</button>
+          <button type="button" data-cmd="video">וידאו (URL)</button>
+          <button type="button" data-cmd="hr">קו</button>
+          <button type="button" data-cmd="undo" title="בטל">↶</button>
+          <button type="button" data-cmd="redo" title="בצע שוב">↷</button>
+          <button type="button" data-cmd="source" id="toggle-source">Markdown</button>
+        </span>
+      </div>
+      <input type="file" id="image-file" accept=".png,.jpg,.jpeg,.webp,.avif,.gif" hidden />
+      <div id="editor" class="editor"></div>
+      <textarea name="body" id="source" class="source" hidden rows="24" dir="rtl"></textarea>
+      <p class="status" style="font-size:.8rem">תמונות: כפתור "תמונה", הדבקה או גרירה לתוך הטקסט; נשמרות בתיקיית הפוסט בעת השמירה. וידאו: קישור YouTube או כתובת mp4 (לא מעלים קבצי וידאו לריפו).</p>
+    </div>
     <label class="row"><input type="checkbox" name="draft" style="width:auto" /> טיוטה (לא מתפרסם)</label>
     <div class="row">
       <button class="btn" type="submit" id="save">שמור ופרסם (commit)</button>
@@ -51,32 +66,123 @@ const today = new Date().toISOString().slice(0, 10);
   </form>
 
   <script>
+    import { Editor, Node } from '@tiptap/core';
+    import StarterKit from '@tiptap/starter-kit';
+    import Link from '@tiptap/extension-link';
+    import Image from '@tiptap/extension-image';
+    import Youtube from '@tiptap/extension-youtube';
+    import Placeholder from '@tiptap/extension-placeholder';
+    import { Markdown } from 'tiptap-markdown';
     const form = document.getElementById('post-form') as HTMLFormElement;
     const status = document.getElementById('status')!;
     const slug = form.dataset.slug;
     const f = (n: string) => form.elements.namedItem(n) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
-    if (slug) {
+    function loadExisting() {
+      if (!slug) return;
       status.textContent = 'טוען…';
       fetch(`/api/admin/posts?slug=${encodeURIComponent(slug)}`).then((r) => r.json()).then((d) => {
         if (d.error) { status.textContent = d.error; status.classList.add('err'); return; }
-        for (const k of ['title', 'description', 'date', 'cover', 'coverAlt', 'section', 'book', 'tags', 'body']) (f(k) as HTMLInputElement).value = d[k] ?? '';
+        for (const k of ['title', 'description', 'date', 'cover', 'coverAlt', 'section', 'book', 'tags']) (f(k) as HTMLInputElement).value = d[k] ?? '';
+        setMarkdown(d.body ?? '');
         (f('parasha_or_moed') as HTMLInputElement).value = d.section === 'מועדים' ? d.moed : d.parasha;
         (f('draft') as HTMLInputElement).checked = Boolean(d.draft);
         status.textContent = `נטען מ-${d.source === 'github' ? 'GitHub' : 'הקבצים המקומיים'}`;
       });
     }
 
-    // סרגל עזר קטן
-    const body = f('body') as HTMLTextAreaElement;
-    document.querySelectorAll<HTMLButtonElement>('.toolbar button').forEach((b) => b.addEventListener('click', () => {
-      const ins = b.dataset.ins!; const s = body.selectionStart, e = body.selectionEnd; const sel = body.value.slice(s, e);
-      let out: string;
-      if (b.dataset.wrap) out = ins + (sel || 'טקסט') + ins;
-      else if (b.dataset.line) out = sel.split('\n').map((l) => ins + l).join('\n') || ins;
-      else out = ins + sel;
-      body.setRangeText(out, s, e, 'end'); body.focus();
-    }));
+    // ---------- עורך Rich Text (Tiptap) עם Markdown כפורמט האחסון ----------
+    const editorEl = document.getElementById('editor')!;
+    const source = document.getElementById('source') as HTMLTextAreaElement;
+    let editor: Editor;
+    let sourceMode = false;
+    const uploads = new Map<string, { name: string; data: string }>(); // dataURL → קובץ
+
+    const Video = Node.create({
+      name: 'video', group: 'block', atom: true, selectable: true,
+      addAttributes() { return { src: { default: null } }; },
+      parseHTML() { return [{ tag: 'video[src]' }]; },
+      renderHTML({ HTMLAttributes }) { return ['video', { ...HTMLAttributes, controls: 'true', preload: 'metadata' }]; },
+      addStorage() { return { markdown: { serialize(state: any, node: any) { state.write(`<video controls preload="metadata" src="${node.attrs.src}"></video>`); state.closeBlock(node); }, parse: {} } }; },
+    });
+
+    function ext(name: string) { return (name.toLowerCase().match(/\.(png|jpe?g|webp|avif|gif)$/)?.[1] ?? 'png').replace('jpeg', 'jpg'); }
+    function addImageFile(file: File) {
+      if (!file.type.startsWith('image/')) return;
+      const r = new FileReader();
+      r.onload = () => {
+        const data = String(r.result);
+        const base = (file.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'image');
+        let name = `${base}.${ext(file.name)}`; let i = 2;
+        while ([...uploads.values()].some((u) => u.name === name)) name = `${base}-${i++}.${ext(file.name)}`;
+        uploads.set(data, { name, data });
+        editor.chain().focus().setImage({ src: data, alt: '' }).run();
+      };
+      r.readAsDataURL(file);
+    }
+
+    editor = new Editor({
+      element: editorEl,
+      extensions: [
+        StarterKit.configure({ heading: { levels: [2, 3] }, link: false }),
+        Link.configure({ openOnClick: false, autolink: true, defaultProtocol: 'https' }),
+        Image.configure({ inline: false, allowBase64: true }),
+        Youtube.configure({ nocookie: true, width: 640, height: 360 }),
+        Video,
+        Placeholder.configure({ placeholder: 'כתוב כאן…' }),
+        Markdown.configure({ html: true, tightLists: true, bulletListMarker: '-', linkify: false, breaks: false, transformPastedText: true, transformCopiedText: true }),
+      ],
+      editorProps: {
+        attributes: { dir: 'rtl', lang: 'he', class: 'prose' },
+        handlePaste: (_v, e) => { const files = [...(e.clipboardData?.files ?? [])]; if (files.some((f) => f.type.startsWith('image/'))) { files.forEach(addImageFile); return true; } return false; },
+        handleDrop: (_v, e) => { const files = [...(e.dataTransfer?.files ?? [])]; if (files.some((f) => f.type.startsWith('image/'))) { e.preventDefault(); files.forEach(addImageFile); return true; } return false; },
+      },
+      content: '',
+    });
+    if (import.meta.env.DEV) (window as any).__amiaiEditor = editor;
+    const getMarkdown = () => (sourceMode ? source.value : (editor.storage as any).markdown.getMarkdown() as string);
+    const setMarkdown = (md: string) => { editor.commands.setContent(md); };
+
+    document.getElementById('image-file')!.addEventListener('change', (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) addImageFile(f); (e.target as HTMLInputElement).value = ''; });
+    document.getElementById('toolbar')!.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-cmd]'); if (!b) return;
+      const c = editor.chain().focus();
+      switch (b.dataset.cmd) {
+        case 'h2': c.toggleHeading({ level: 2 }).run(); break;
+        case 'h3': c.toggleHeading({ level: 3 }).run(); break;
+        case 'bold': c.toggleBold().run(); break;
+        case 'italic': c.toggleItalic().run(); break;
+        case 'quote': c.toggleBlockquote().run(); break;
+        case 'ul': c.toggleBulletList().run(); break;
+        case 'ol': c.toggleOrderedList().run(); break;
+        case 'hr': c.setHorizontalRule().run(); break;
+        case 'undo': c.undo().run(); break;
+        case 'redo': c.redo().run(); break;
+        case 'link': { const prev = editor.getAttributes('link').href; const url = prompt('כתובת הקישור:', prev || 'https://'); if (url === null) break; if (!url) c.unsetLink().run(); else c.extendMarkRange('link').setLink({ href: url }).run(); break; }
+        case 'image': document.getElementById('image-file')!.click(); break;
+        case 'youtube': { const url = prompt('קישור YouTube:'); if (url) c.setYoutubeVideo({ src: url }).run(); break; }
+        case 'video': { const url = prompt('כתובת קובץ וידאו (mp4/webm):'); if (url) c.insertContent({ type: 'video', attrs: { src: url } }).run(); break; }
+        case 'source': {
+          sourceMode = !sourceMode;
+          if (sourceMode) { source.value = (editor.storage as any).markdown.getMarkdown(); source.hidden = false; editorEl.hidden = true; b.textContent = 'עורך'; }
+          else { setMarkdown(source.value); source.hidden = true; editorEl.hidden = false; b.textContent = 'Markdown'; }
+          break;
+        }
+      }
+    });
+
+    loadExisting();
+
+    // הפיכת data URLs לקבצים בתיקיית הפוסט
+    function finalizeBody(md: string) {
+      const files: { name: string; data: string }[] = [];
+      const out = md.replace(/data:image\/[a-z+]+;base64,[A-Za-z0-9+/=]+/g, (m) => {
+        const u = uploads.get(m); if (!u) return m;
+        if (!files.some((f) => f.name === u.name)) files.push(u);
+        return `./${u.name}`;
+      });
+      return { body: out, uploads: files };
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -87,7 +193,7 @@ const today = new Date().toISOString().slice(0, 10);
         slug: f('slug').value.trim(), title: f('title').value, description: f('description').value, date: f('date').value,
         cover: f('cover').value, coverAlt: f('coverAlt').value, section, book: f('book').value,
         parasha: section === 'פרשה' ? f('parasha_or_moed').value : '', moed: section === 'מועדים' ? f('parasha_or_moed').value : '',
-        tags: f('tags').value, draft: (f('draft') as HTMLInputElement).checked, body: body.value,
+        tags: f('tags').value, draft: (f('draft') as HTMLInputElement).checked, ...finalizeBody(getMarkdown()),
       };
       const file = (f('coverUpload') as HTMLInputElement).files?.[0];
       if (file) payload.coverUpload = { name: file.name, data: await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.readAsDataURL(file); }) };

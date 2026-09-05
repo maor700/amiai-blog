@@ -40,6 +40,17 @@ export const PUT: APIRoute = async (ctx) => {
     section: f.section ?? 'עיונים', book: f.book ?? '', parasha: f.parasha ?? '', moed: f.moed ?? '', tags: f.tags ?? '',
     draft: Boolean(f.draft), body: String(f.body ?? ''),
   });
+  if (Array.isArray(f.uploads)) {
+    let total = 0;
+    for (const u of f.uploads.slice(0, 30)) {
+      const name = String(u.name ?? '');
+      if (!/^[a-z0-9][a-z0-9-]{0,60}\.(png|jpe?g|webp|avif|gif)$/.test(name) || name.startsWith('cover.')) return json({ error: `שם קובץ לא תקין: ${name}` }, 422);
+      const b64 = String(u.data ?? '').replace(/^data:[^;]+;base64,/, '');
+      total += b64.length;
+      if (total > 40_000_000) return json({ error: 'סך התמונות גדול מדי (עד ~30MB)' }, 422);
+      changes.push({ path: `content/posts/${slug}/${name}`, content: b64, encoding: 'base64' });
+    }
+  }
   changes.push({ path: `content/posts/${slug}/index.md`, content: text });
   const res = await repo.commit(changes, `${isNew ? 'post' : 'edit'}: ${String(f.title).trim()} (${slug})`);
   return json({ ok: true, slug, isNew, sha: res.sha ?? null, source: repo.kind });

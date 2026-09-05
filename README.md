@@ -48,7 +48,7 @@ node scripts/new-post.mjs my-post-slug "כותרת הפוסט"
 1. ב-Vercel: Storage → Create → Neon (או neon.tech ישירות) → מעתיקים את `DATABASE_URL` למשתני הסביבה של הפרויקט.
 2. זה הכול; הטבלה נוצרת לבד בבקשה הראשונה. בלי `DATABASE_URL` קטע התגובות פשוט לא מופיע.
 
-**ניהול** (`/admin`) — כניסה בסיסמה אחת, אישור/מחיקת תגובות, ועריכת פוסטים שנשמרת כ-commit ישירות לריפו (Vercel בונה ומפרסם אוטומטית).
+**ניהול** (`/admin`) — כניסה בסיסמה אחת, אישור/מחיקת תגובות, ועריכת פוסטים בעורך עשיר (Tiptap: כותרות, הדגשה, ציטוט, רשימות, קישורים, תמונות בהדבקה/גרירה, YouTube ווידאו מ-URL; מתג ל-Markdown גולמי). השמירה נכתבת כ-Markdown ונשמרת כ-commit ישירות לריפו (Vercel בונה ומפרסם אוטומטית). תמונות שהודבקו נשמרות כקבצים בתיקיית הפוסט; וידאו לא מועלה לריפו — רק קישור YouTube או כתובת mp4.
 1. `ADMIN_PASSWORD` — סיסמה של 8 תווים לפחות.
 2. `GITHUB_TOKEN` — Fine-grained personal access token (github.com → Settings → Developer settings → Fine-grained tokens) עם גישה לריפו הזה בלבד והרשאת **Contents: Read and write**. בלי הטוקן, עריכת הפוסטים כבויה (התגובות עדיין עובדות).
 3. אופציונלי: `GITHUB_REPO` (ברירת מחדל `maor700/amiai-blog`), `GITHUB_BRANCH` (ברירת מחדל `master`), `NOTIFY_WEBHOOK_URL` (POST JSON על כל תגובה חדשה — למשל webhook של Slack/Make/n8n).
