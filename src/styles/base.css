@@ -1,11 +1,11 @@
 /* am-i.ai — סגנון פשוט בהשראת Medium: לבן, עמודה אחת, סריף לגוף, סאנס לכותרות ולממשק */
 :root {
-  --font-serif: 'Frank Ruhl Libre', Georgia, 'Times New Roman', serif;
+  --font-serif: 'Noto Sans Hebrew', 'Heebo', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; /* גוף המאמר: כמו באתר הקודם */
   --font-sans: 'Heebo', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --measure: 680px;
   --wide: 1192px;
-  --fs-body: 1.25rem;   /* 20px */
-  --lh-body: 1.7;
+  --fs-body: 1.15rem;   /* 18.4px */
+  --lh-body: 1.8;
   --bg: #ffffff;
   --fg: #242424;
   --muted: #6b6b6b;
@@ -169,6 +169,7 @@ html.is-dark .theme-toggle .ico-moon { opacity: 1; transform: none; }
 .prose a:hover { text-decoration-color: currentColor; }
 .prose strong { font-weight: 700; }
 .prose em { font-style: normal; color: var(--muted); }
+.prose blockquote { font-size: 1.02em; }
 .prose blockquote {
   margin: 1.6em 0; padding-inline-start: 1.25em;
   border-inline-start: 3px solid var(--fg);
