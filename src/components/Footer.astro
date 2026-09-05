@@ -1,0 +1,25 @@
+---
+import { Image } from 'astro:assets';
+import author from '../assets/author.jpg';
+import { SITE } from '../lib/site';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="about">
+    <Image src={author} alt={SITE.author} width="112" height="112" class="about-photo" loading="lazy" />
+    <div class="about-text">
+      <p class="about-name">{SITE.author}</p>
+      <p>
+        מפתח תוכנה וכותב. הבלוג הזה מנסה לקרוא את פרשת השבוע ואת פנימיות התורה מול השאלות שהבינה המלאכותית פותחת:
+        חכמה, בינה ודעת, שלמות והשתלמות, ומה נשאר לאדם.
+      </p>
+    </div>
+  </div>
+  <div class="colophon">
+    <span><a href={`${base}/rss.xml`}>RSS</a></span>
+    <span><a href={`${base}/archive`}>ארכיון</a></span>
+    <span class="mono">{year} · {SITE.short}</span>
+  </div>
+</footer>

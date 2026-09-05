@@ -1,0 +1,18 @@
+---
+import type { Post } from '../lib/posts';
+import { postLabel } from '../lib/posts';
+import { hebrewDate, gregDate, isoDate } from '../lib/dates';
+interface Props { post: Post; minutes?: number; compact?: boolean }
+const { post, minutes, compact = false } = Astro.props;
+const d = post.data;
+---
+
+<p class:list={['meta', 'mono', { compact }]}>
+  <span class="meta-label">{postLabel(post)}</span>
+  {d.book && d.section === 'פרשה' && <span class="meta-sep">·</span>}
+  {d.book && d.section === 'פרשה' && <span>ספר {d.book}</span>}
+  <span class="meta-sep">·</span>
+  <time datetime={isoDate(d.date)} title={gregDate(d.date)}>{hebrewDate(d.date)}</time>
+  {minutes && <span class="meta-sep">·</span>}
+  {minutes && <span>{minutes} דק׳ קריאה</span>}
+</p>

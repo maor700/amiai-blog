@@ -1,0 +1,99 @@
+/* ================= כיוון 2: "טרמינל־מדרש" — כהה, מונוספייס למסגרת, סריף לגוף, צורת הדף ================= */
+html[data-design='terminal'] {
+  --bg: #0d0f12;
+  --surface: #14171c;
+  --fg: #dfe3e8;
+  --muted: #8b939d;
+  --accent: #e0a94a;
+  --link: #f0c878;
+  --rule: #262b33;
+  --grid: rgba(255, 255, 255, 0.025);
+  color-scheme: dark;
+}
+/* כהה כברירת מחדל (זהות העיצוב); בהיר רק בבחירה מפורשת של הקורא */
+html[data-design='terminal'][data-theme='light'] { --bg: #f5f5f1; --surface: #ebebe4; --fg: #1a1d21; --muted: #666e77; --accent: #9a6a12; --link: #6e4a08; --rule: #d6d6cc; --grid: rgba(0, 0, 0, 0.035); color-scheme: light; }
+
+html[data-design='terminal'] body {
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 1.5rem 1.5rem;
+}
+html[data-design='terminal'] { --wide: 78rem; --measure: 36rem; --fs-body: 1.18rem; --lh-body: 1.8; }
+
+/* מסגרת: קו דק מסביב, שורת מצב */
+html[data-design='terminal'] .frame { max-width: var(--wide); margin: 0 auto; border-inline: 1px solid var(--rule); min-height: 100dvh; }
+html[data-design='terminal'] .site-header { border-bottom: 1px solid var(--rule); padding-top: 0.8rem; padding-bottom: 0.8rem; }
+html[data-design='terminal'] .brand-title { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; }
+html[data-design='terminal'] .brand-title::before { content: 'am-i.ai › '; color: var(--accent); font-weight: 400; }
+html[data-design='terminal'] .brand-tag { display: none; }
+html[data-design='terminal'] .brand-mark { display: none; }
+html[data-design='terminal'] .site-nav a::before { content: '['; color: var(--rule); }
+html[data-design='terminal'] .site-nav a::after { content: ']'; position: static; background: none; transform: none; color: var(--rule); }
+html[data-design='terminal'] .site-nav a[aria-current]::before, html[data-design='terminal'] .site-nav a[aria-current]::after, html[data-design='terminal'] .site-nav a:hover::before, html[data-design='terminal'] .site-nav a:hover::after { color: var(--accent); }
+html[data-design='terminal'] .theme-toggle { border-radius: 2px; }
+
+/* גיבור: שורת פרומפט עם סמן מהבהב */
+html[data-design='terminal'] .hero-kicker { color: var(--accent); }
+html[data-design='terminal'] .hero-kicker::after { content: '▍'; margin-inline-start: 0.25em; animation: blink 1.1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+html[data-design='terminal'] .hero-title { font-weight: 700; }
+html[data-design='terminal'] .hero-cover img { border: 1px solid var(--rule); padding: 0.4rem; background: var(--surface); }
+html[data-design='terminal'] .hero-caption { position: static; display: block; margin-top: 0.5rem; padding: 0 0.2rem; }
+html[data-design='terminal'] .hero-caption::before { content: '// '; color: var(--accent); }
+html[data-design='terminal'] .hero-cta { border-color: var(--accent); color: var(--accent); }
+html[data-design='terminal'] .hero-cta:hover { background: var(--accent); color: var(--bg); }
+
+/* רשימה: אינדקס טבלאי */
+html[data-design='terminal'] .list-head h2::before { content: '## '; color: var(--accent); font-family: var(--font-mono); font-weight: 400; }
+html[data-design='terminal'] .cards { grid-template-columns: 1fr; gap: 0; border-top: 1px solid var(--rule); }
+html[data-design='terminal'] .card { grid-template-columns: 3rem 9rem minmax(0, 1fr); gap: 1rem 1.25rem; align-items: start; padding: 1.1rem 0; border-bottom: 1px solid var(--rule); }
+html[data-design='terminal'] .card-index { position: static; color: var(--accent); font-size: 0.75rem; padding-top: 0.35rem; }
+html[data-design='terminal'] .card-cover { grid-column: 2; }
+html[data-design='terminal'] .card-cover img { aspect-ratio: 16/10; border: 1px solid var(--rule); filter: grayscale(0.6) contrast(1.05); transition: filter var(--dur); }
+html[data-design='terminal'] .card:hover .card-cover img { filter: none; }
+html[data-design='terminal'] .card-body { grid-column: 3; display: grid; gap: 0.35rem; }
+html[data-design='terminal'] .card-title { font-size: 1.3rem; }
+html[data-design='terminal'] .card-desc { -webkit-line-clamp: 2; }
+@media (max-width: 640px) {
+  html[data-design='terminal'] .card { grid-template-columns: 3rem minmax(0, 1fr); }
+  html[data-design='terminal'] .card-cover { display: none; }
+  html[data-design='terminal'] .card-body { grid-column: 2; }
+}
+
+/* עמוד פוסט: צורת הדף — טקסט במרכז, עמודת פירוש מונוספייס בצד */
+html[data-design='terminal'] .post { grid-template-columns: minmax(0, var(--measure)); }
+@media (min-width: 1100px) {
+  html[data-design='terminal'] .post[data-has-toc] { grid-template-columns: 15rem minmax(0, var(--measure)); column-gap: 3.5rem; justify-content: center; }
+  html[data-design='terminal'] .post[data-has-toc] .post-header { grid-column: 1 / -1; }
+  html[data-design='terminal'] .post[data-has-toc] .post-aside { display: grid; align-content: start; gap: 1.5rem; grid-column: 1; grid-row: 2; position: sticky; top: 1.5rem; align-self: start; }
+  html[data-design='terminal'] .post[data-has-toc] .prose { grid-column: 2; grid-row: 2; }
+  html[data-design='terminal'] .post[data-has-toc] .post-footer, html[data-design='terminal'] .post[data-has-toc] .comments { grid-column: 2; }
+}
+html[data-design='terminal'] .aside-block { border: 1px solid var(--rule); padding: 0.9rem 1rem; background: var(--surface); position: relative; }
+html[data-design='terminal'] .aside-title { position: absolute; top: -0.7em; inset-inline-start: 0.8rem; padding: 0 0.4rem; background: var(--bg); color: var(--accent); font-size: 0.7rem; }
+html[data-design='terminal'] .toc { margin: 0; padding: 0; list-style: none; counter-reset: toc; font-size: 0.78rem; line-height: 1.6; display: grid; gap: 0.35rem; }
+html[data-design='terminal'] .toc li { counter-increment: toc; display: flex; gap: 0.6rem; }
+html[data-design='terminal'] .toc li::before { content: counter(toc, decimal-leading-zero); color: var(--accent); flex: none; }
+html[data-design='terminal'] .toc a { color: var(--muted); text-decoration: none; }
+html[data-design='terminal'] .toc a:hover { color: var(--fg); }
+html[data-design='terminal'] .facts { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 0.8rem; font-size: 0.75rem; }
+html[data-design='terminal'] .facts dt { color: var(--muted); }
+html[data-design='terminal'] .facts dd { margin: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+html[data-design='terminal'] .facts a { color: var(--fg); text-decoration: none; }
+html[data-design='terminal'] .facts a:hover { color: var(--accent); }
+html[data-design='terminal'] .post-header { border-bottom: 1px solid var(--rule); padding-bottom: 2rem; }
+html[data-design='terminal'] .post-cover img { border: 1px solid var(--rule); padding: 0.4rem; background: var(--surface); }
+html[data-design='terminal'] .post-cover figcaption::before { content: '// '; color: var(--accent); }
+html[data-design='terminal'] .prose h2 { font-family: var(--font-serif); position: relative; }
+html[data-design='terminal'] .prose h2::before { content: '§ '; font-family: var(--font-mono); color: var(--accent); font-weight: 400; font-size: 0.8em; }
+html[data-design='terminal'] .prose blockquote {
+  margin: 2em 0; padding: 1.1em 1.4em 1em; border: 1px solid var(--rule); border-inline-start: 2px solid var(--accent); background: var(--surface); position: relative;
+}
+html[data-design='terminal'] .prose blockquote::before {
+  content: 'מקור'; position: absolute; top: -0.75em; inset-inline-start: 1rem; padding: 0 0.45em; background: var(--bg); color: var(--accent); font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.05em;
+}
+html[data-design='terminal'] .prose img { border: 1px solid var(--rule); padding: 0.3rem; background: var(--surface); border-radius: 0; }
+html[data-design='terminal'] .archive-group h2::before { content: '## '; color: var(--accent); font-family: var(--font-mono); font-weight: 400; }
+html[data-design='terminal'] .archive-row { border-bottom-style: solid; }
+html[data-design='terminal'] .about-photo { border-radius: 2px; border: 1px solid var(--rule); filter: grayscale(1) contrast(1.1); }
+html[data-design='terminal'] .page-head h1 { font-weight: 700; }

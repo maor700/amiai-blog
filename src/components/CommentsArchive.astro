@@ -1,0 +1,36 @@
+---
+import { getEntry } from 'astro:content';
+import { gregDate } from '../lib/dates';
+interface Props { slug: string }
+const { slug } = Astro.props;
+const entry = await getEntry('comments', slug);
+const comments = entry?.data.comments ?? [];
+type C = (typeof comments)[number];
+const roots = comments.filter((c: C) => !c.parent);
+const children = (id: string) => comments.filter((c: C) => c.parent === id);
+---
+
+{comments.length > 0 && (
+  <section class="comments" aria-labelledby="comments-h">
+    <h2 id="comments-h" class="comments-title">תגובות מהארכיון <span class="mono">({comments.length})</span></h2>
+    <p class="comments-note">התגובות נכתבו בגרסה הקודמת של האתר. להמשך הדיון: פייסבוק או מייל.</p>
+    <ol class="comment-list">
+      {roots.map((c: C) => (
+        <li class="comment" id={`c-${c.id}`}>
+          <p class="comment-head mono"><strong>{c.name}</strong> · <time datetime={c.date}>{gregDate(new Date(c.date))}</time></p>
+          {c.text.split(/\n\n+/).map((p: string) => <p>{p}</p>)}
+          {children(c.id).length > 0 && (
+            <ol class="comment-replies">
+              {children(c.id).map((r: C) => (
+                <li class="comment reply" id={`c-${r.id}`}>
+                  <p class="comment-head mono"><strong>{r.name}</strong> · <time datetime={r.date}>{gregDate(new Date(r.date))}</time></p>
+                  {r.text.split(/\n\n+/).map((p: string) => <p>{p}</p>)}
+                </li>
+              ))}
+            </ol>
+          )}
+        </li>
+      ))}
+    </ol>
+  </section>
+)}

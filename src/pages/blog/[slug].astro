@@ -1,0 +1,91 @@
+---
+import { Image } from 'astro:assets';
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import PostMeta from '../../components/PostMeta.astro';
+import CommentsArchive from '../../components/CommentsArchive.astro';
+import { allPosts, type Post } from '../../lib/posts';
+import { readingMinutes, isoDate } from '../../lib/dates';
+import { SITE } from '../../lib/site';
+
+export async function getStaticPaths() {
+  const posts = await allPosts();
+  return posts.map((post, i) => ({
+    params: { slug: post.id },
+    props: { post, newer: posts[i - 1] ?? null, older: posts[i + 1] ?? null },
+  }));
+}
+interface Props { post: Post; newer: Post | null; older: Post | null }
+const { post, newer, older } = Astro.props;
+const { Content, headings } = await render(post);
+const toc = headings.filter((h) => h.depth === 2);
+const minutes = readingMinutes(post.body);
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const og = `${base}/og/${post.id}.png`;
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.data.title,
+  description: post.data.description,
+  datePublished: post.data.date.toISOString(),
+  dateModified: (post.data.updated ?? post.data.date).toISOString(),
+  author: { '@type': 'Person', name: SITE.author },
+  image: new URL(og, Astro.site).href,
+  inLanguage: 'he',
+  mainEntityOfPage: new URL(Astro.url.pathname, Astro.site).href,
+};
+---
+
+<Base title={post.data.title} description={post.data.description} image={og} type="article" published={post.data.date} bodyClass="is-post">
+  <article class="post" data-has-toc={toc.length > 1 ? '' : undefined}>
+    <header class="post-header">
+      <PostMeta post={post} minutes={minutes} />
+      <h1 class="post-title">{post.data.title}</h1>
+      {post.data.description && <p class="post-lede">{post.data.description}</p>}
+      {post.data.cover && (
+        <figure class="post-cover">
+          <Image src={post.data.cover} alt={post.data.coverAlt ?? ''} width="1200" height="640" loading="eager" fetchpriority="high" />
+          {post.data.coverAlt && <figcaption class="mono">{post.data.coverAlt}</figcaption>}
+        </figure>
+      )}
+    </header>
+
+    {toc.length > 1 && (
+      <aside class="post-aside" aria-label="תוכן העניינים">
+        <div class="aside-block">
+          <p class="aside-title mono">תוכן</p>
+          <ol class="toc mono">
+            {toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}
+          </ol>
+        </div>
+        <div class="aside-block">
+          <p class="aside-title mono">פרטים</p>
+          <dl class="facts mono">
+            <dt>תאריך</dt><dd>{isoDate(post.data.date)}</dd>
+            <dt>קריאה</dt><dd>{minutes} דק׳</dd>
+            {post.data.tags.length > 0 && <dt>תגיות</dt>}
+            {post.data.tags.length > 0 && <dd>{post.data.tags.map((t) => <a href={`${base}/tags/${encodeURIComponent(t)}`}>{t}</a>)}</dd>}
+          </dl>
+        </div>
+      </aside>
+    )}
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <footer class="post-footer">
+      {post.data.tags.length > 0 && (
+        <p class="tags mono">
+          {post.data.tags.map((t) => <a class="tag" dir="auto" href={`${base}/tags/${encodeURIComponent(t)}`}>#{t}</a>)}
+        </p>
+      )}
+      <nav class="post-nav" aria-label="ניווט בין מאמרים">
+        {older && <a class="nav-older" href={`${base}/blog/${older.id}`}><span class="mono">הקודם</span><span>{older.data.title}</span></a>}
+        {newer && <a class="nav-newer" href={`${base}/blog/${newer.id}`}><span class="mono">הבא</span><span>{newer.data.title}</span></a>}
+      </nav>
+    </footer>
+    <CommentsArchive slug={post.id} />
+  </article>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+</Base>

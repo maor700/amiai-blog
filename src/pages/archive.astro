@@ -1,0 +1,41 @@
+---
+import Base from '../layouts/Base.astro';
+import { allPosts, groupForArchive, postLabel } from '../lib/posts';
+import { isoDate, hebrewDate } from '../lib/dates';
+const posts = await allPosts();
+const groups = groupForArchive(posts);
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const tags = [...new Set(posts.flatMap((p) => p.data.tags))].sort((a, b) => a.localeCompare(b, 'he'));
+---
+
+<Base title="ארכיון" description="כל המאמרים לפי ספר, פרשה, מועד ועיון.">
+  <section class="archive">
+    <header class="page-head">
+      <p class="mono kicker">› ארכיון</p>
+      <h1>לפי ספר ופרשה</h1>
+      <p class="page-lede">{posts.length} מאמרים. הסדר בתוך כל ספר הוא סדר הפרשות, לא הכרונולוגיה.</p>
+    </header>
+
+    {groups.map((g) => (
+      <section class="archive-group" aria-labelledby={g.key}>
+        <h2 id={g.key}>{g.kicker && <span class="mono kicker">{g.kicker} · </span>}{g.title}</h2>
+        <ol class="archive-list">
+          {g.posts.map((p) => (
+            <li class="archive-row">
+              <span class="row-label">{postLabel(p)}</span>
+              <a class="row-title" href={`${base}/blog/${p.id}`}>{p.data.title}</a>
+              <time class="row-date mono" datetime={isoDate(p.data.date)}>{hebrewDate(p.data.date)}</time>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))}
+
+    {tags.length > 0 && (
+      <section class="archive-group" aria-labelledby="tags-h">
+        <h2 id="tags-h">תגיות</h2>
+        <p class="tags mono">{tags.map((t) => <a class="tag" dir="auto" href={`${base}/tags/${encodeURIComponent(t)}`}>#{t}</a>)}</p>
+      </section>
+    )}
+  </section>
+</Base>

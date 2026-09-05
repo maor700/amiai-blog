@@ -1,0 +1,50 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import PostCard from '../components/PostCard.astro';
+import PostMeta from '../components/PostMeta.astro';
+import { allPosts } from '../lib/posts';
+import { readingMinutes } from '../lib/dates';
+import { SITE } from '../lib/site';
+const posts = await allPosts();
+const [featured, ...rest] = posts;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<Base>
+  {featured && (
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="hero-kicker mono">› הפוסט האחרון</p>
+      <PostMeta post={featured} minutes={readingMinutes(featured.body)} />
+      <h1 id="hero-title" class="hero-title">
+        <a href={`${base}/blog/${featured.id}`}>{featured.data.title}</a>
+      </h1>
+      <p class="hero-desc">{featured.data.description}</p>
+      {featured.data.cover && (
+        <a class="hero-cover" href={`${base}/blog/${featured.id}`} tabindex="-1" aria-hidden="true">
+          <Image src={featured.data.cover} alt="" width="1200" height="640" loading="eager" fetchpriority="high" />
+          {featured.data.coverAlt && <span class="hero-caption mono">{featured.data.coverAlt}</span>}
+        </a>
+      )}
+      <a class="hero-cta" href={`${base}/blog/${featured.id}`}>לקריאה <span aria-hidden="true">←</span></a>
+    </section>
+  )}
+
+  {rest.length > 0 && (
+    <section class="list" aria-labelledby="list-title">
+      <div class="list-head">
+        <h2 id="list-title">עוד מאמרים</h2>
+        <a class="list-more mono" href={`${base}/archive`}>ארכיון לפי ספר ופרשה ←</a>
+      </div>
+      <div class="cards">
+        {rest.map((p, i) => <PostCard post={p} index={posts.length - 1 - i} />)}
+      </div>
+    </section>
+  )}
+
+  <section class="intro" aria-label="על הבלוג">
+    <p>
+      <strong>{SITE.title}.</strong> {SITE.description}
+    </p>
+  </section>
+</Base>

@@ -1,0 +1,108 @@
+---
+import '@fontsource/frank-ruhl-libre/400.css';
+import '@fontsource/frank-ruhl-libre/500.css';
+import '@fontsource/frank-ruhl-libre/700.css';
+import '@fontsource/frank-ruhl-libre/900.css';
+import '@fontsource/david-libre/400.css';
+import '@fontsource/david-libre/700.css';
+import '@fontsource/cousine/400.css';
+import '@fontsource/cousine/700.css';
+import '../styles/base.css';
+import '../styles/klaf.css';
+import '../styles/terminal.css';
+import { ClientRouter } from 'astro:transitions';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE, DESIGN } from '../lib/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string; // absolute or site-relative
+  type?: 'website' | 'article';
+  published?: Date;
+  bodyClass?: string;
+}
+const { title, description = SITE.description, image, type = 'website', published, bodyClass = '' } = Astro.props;
+const fullTitle = title ? `${title} · ${SITE.title}` : `${SITE.title} · ${SITE.tagline}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(image ?? `${import.meta.env.BASE_URL.replace(/\/$/, '')}/og/default.png`, Astro.site);
+const rss = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/rss.xml`;
+---
+
+<!doctype html>
+<html lang={SITE.lang} dir="rtl" data-design={DESIGN}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content={SITE.author} />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`} type="image/svg+xml" />
+    <link rel="alternate" type="application/rss+xml" title={SITE.title} href={rss} />
+    <link rel="sitemap" href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/sitemap-index.xml`} />
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={SITE.title} />
+    <meta property="og:locale" content="he_IL" />
+    <meta property="og:title" content={title ?? SITE.title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    {published && <meta property="article:published_time" content={published.toISOString()} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title ?? SITE.title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="color-scheme" content="light dark" />
+    <script is:inline>
+      // מצב תצוגה: נשמר ב-localStorage, אחרת לפי המערכת. רץ לפני הציור כדי למנוע הבזק.
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
+    <ClientRouter />
+  </head>
+  <body class={bodyClass}>
+    <a class="skip" href="#main">דלג לתוכן</a>
+    <div class="frame">
+      <Header />
+      <main id="main" class="main">
+        <slot />
+      </main>
+      <Footer />
+    </div>
+    <script>
+      // מתג אור/חושך + שימור בין ניווטים של ClientRouter
+      const root = document.documentElement;
+      const effective = () => getComputedStyle(root).colorScheme.includes('dark') ? 'dark' : 'light';
+      function applyTheme(t: string | null) {
+        if (t === 'light' || t === 'dark') root.dataset.theme = t;
+        else delete root.dataset.theme;
+        root.classList.toggle('is-dark', effective() === 'dark');
+      }
+      function bind() {
+        document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]').forEach((btn) => {
+          btn.onclick = () => {
+            const next = effective() === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', next);
+            applyTheme(next);
+          };
+        });
+      }
+      applyTheme(localStorage.getItem('theme'));
+      bind();
+      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(localStorage.getItem('theme')));
+      document.addEventListener('astro:after-swap', () => {
+        applyTheme(localStorage.getItem('theme'));
+        bind();
+      });
+    </script>
+  </body>
+</html>

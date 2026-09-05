@@ -1,0 +1,78 @@
+/* ================= כיוון 1: "קלף" — נייר, סריף, שוליים נדיבים ================= */
+html[data-design='klaf'] {
+  --bg: #f3ecdc;
+  --surface: #ebe2cf;
+  --fg: #211b14;
+  --muted: #6d6152;
+  --accent: #7a2e1d;
+  --link: #4a2a1a;
+  --rule: #d9cfb8;
+  --grid: rgba(60, 40, 20, 0.045);
+  --paper-noise: 0.05;
+  color-scheme: light;
+}
+html[data-design='klaf'][data-theme='dark'] { --bg: #16130f; --surface: #1e1a14; --fg: #ebe1cf; --muted: #9c8f7a; --accent: #d98b5f; --link: #e6c9a8; --rule: #2e281f; --grid: rgba(235, 225, 207, 0.05); color-scheme: dark; }
+@media (prefers-color-scheme: dark) {
+  html[data-design='klaf']:not([data-theme='light']) { --bg: #16130f; --surface: #1e1a14; --fg: #ebe1cf; --muted: #9c8f7a; --accent: #d98b5f; --link: #e6c9a8; --rule: #2e281f; --grid: rgba(235, 225, 207, 0.05); color-scheme: dark; }
+}
+
+html[data-design='klaf'] body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 2.5rem 2.5rem;
+  background-attachment: fixed;
+}
+/* טקסטורת נייר עדינה מאוד */
+html[data-design='klaf'] body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: var(--paper-noise);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.9 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+  mix-blend-mode: multiply;
+}
+html[data-design='klaf'][data-theme='dark'] body::before { mix-blend-mode: screen; opacity: 0.035; }
+html[data-design='klaf'] .frame { position: relative; z-index: 1; }
+
+/* כותרת האתר: קו כפול כמו שער ספר */
+html[data-design='klaf'] .site-header { border-bottom: 1px solid var(--rule); box-shadow: 0 3px 0 -2px var(--rule); }
+html[data-design='klaf'] .brand-title { font-weight: 900; letter-spacing: 0.01em; }
+
+/* גיבור: כותרת ענקית, תמונה מתערבבת בנייר */
+html[data-design='klaf'] .hero { padding-top: clamp(2.5rem, 7vw, 5rem); }
+html[data-design='klaf'] .hero-kicker { display: none; }
+html[data-design='klaf'] .hero-title { font-weight: 900; }
+html[data-design='klaf'] .hero-cover img, html[data-design='klaf'] .post-cover img, html[data-design='klaf'] .card-cover img {
+  filter: sepia(0.35) contrast(0.95) saturate(0.85);
+  mix-blend-mode: multiply;
+  transition: filter 400ms var(--ease);
+}
+html[data-design='klaf'][data-theme='dark'] .hero-cover img, html[data-design='klaf'][data-theme='dark'] .post-cover img, html[data-design='klaf'][data-theme='dark'] .card-cover img { mix-blend-mode: normal; filter: sepia(0.2) brightness(0.85); }
+@media (prefers-color-scheme: dark) {
+  html[data-design='klaf']:not([data-theme='light']) .hero-cover img, html[data-design='klaf']:not([data-theme='light']) .post-cover img, html[data-design='klaf']:not([data-theme='light']) .card-cover img { mix-blend-mode: normal; filter: sepia(0.2) brightness(0.85); }
+}
+html[data-design='klaf'] .hero:hover .hero-cover img, html[data-design='klaf'] .card:hover .card-cover img { filter: none; }
+html[data-design='klaf'] .hero-caption { display: none; }
+html[data-design='klaf'] .hero-cta { border-radius: 999px; }
+
+/* כרטיסים: קו עליון דק, מספר סידורי */
+html[data-design='klaf'] .card { padding-top: 1rem; border-top: 1px solid var(--rule); }
+html[data-design='klaf'] .card-index { display: none; }
+
+/* פוסט: עמודה אחת, שוליים נדיבים, ציטוט עם שוליים רחבים */
+html[data-design='klaf'] { --measure: 37rem; --fs-body: 1.25rem; --lh-body: 1.9; }
+html[data-design='klaf'] .post-title { font-weight: 900; }
+html[data-design='klaf'] .post-header::after { content: ''; display: block; width: 4rem; height: 2px; background: var(--accent); margin-top: 0.5rem; }
+html[data-design='klaf'] .prose blockquote {
+  margin: 2.2em -0.5em; padding: 0.6em 1.6em 0.6em 1.2em;
+  font-size: 1.18em; line-height: 1.8;
+  border-inline-start: 2px solid var(--accent);
+  position: relative;
+}
+html[data-design='klaf'] .prose blockquote::before {
+  content: '׀'; position: absolute; inset-inline-start: -0.6em; top: -0.35em; color: var(--accent); font-family: var(--font-quote); font-size: 1.3em; opacity: 0.55;
+}
+html[data-design='klaf'] .prose h2 { font-weight: 900; }
+html[data-design='klaf'] .prose h2::before { content: '§'; color: var(--accent); margin-inline-end: 0.5em; font-weight: 400; font-family: var(--font-quote); }
+html[data-design='klaf'] .prose > p:first-of-type::first-letter { font-size: 1.15em; font-weight: 700; }
+html[data-design='klaf'] .archive-group h2 { font-weight: 900; }
+html[data-design='klaf'] .about-photo { filter: sepia(0.5) contrast(0.95); }
