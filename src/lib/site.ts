@@ -8,4 +8,3 @@ export const SITE = {
   lang: 'he',
 } as const;
 
-export const DESIGN: 'klaf' | 'terminal' = (import.meta.env.PUBLIC_DESIGN as any) === 'terminal' ? 'terminal' : 'klaf';

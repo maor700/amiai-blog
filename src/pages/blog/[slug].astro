@@ -5,8 +5,10 @@ import Base from '../../layouts/Base.astro';
 import PostMeta from '../../components/PostMeta.astro';
 import CommentsArchive from '../../components/CommentsArchive.astro';
 import { allPosts, type Post } from '../../lib/posts';
-import { readingMinutes, isoDate } from '../../lib/dates';
+import { readingMinutes } from '../../lib/dates';
 import { SITE } from '../../lib/site';
+import author from '../../assets/author.jpg';
+import { gregDate } from '../../lib/dates';
 
 export async function getStaticPaths() {
   const posts = await allPosts();
@@ -17,8 +19,7 @@ export async function getStaticPaths() {
 }
 interface Props { post: Post; newer: Post | null; older: Post | null }
 const { post, newer, older } = Astro.props;
-const { Content, headings } = await render(post);
-const toc = headings.filter((h) => h.depth === 2);
+const { Content } = await render(post);
 const minutes = readingMinutes(post.body);
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const og = `${base}/og/${post.id}.png`;
@@ -37,11 +38,18 @@ const jsonLd = {
 ---
 
 <Base title={post.data.title} description={post.data.description} image={og} type="article" published={post.data.date} bodyClass="is-post">
-  <article class="post" data-has-toc={toc.length > 1 ? '' : undefined}>
+  <article class="post">
     <header class="post-header">
       <PostMeta post={post} minutes={minutes} />
       <h1 class="post-title">{post.data.title}</h1>
       {post.data.description && <p class="post-lede">{post.data.description}</p>}
+      <div class="byline">
+        <Image src={author} alt={SITE.author} width="88" height="88" class="byline-photo" />
+        <div>
+          <p class="byline-name">{SITE.author}</p>
+          <p class="byline-sub">{gregDate(post.data.date)} · {minutes} דק׳ קריאה</p>
+        </div>
+      </div>
       {post.data.cover && (
         <figure class="post-cover">
           <Image src={post.data.cover} alt={post.data.coverAlt ?? ''} width="1200" height="640" loading="eager" fetchpriority="high" />
@@ -50,25 +58,6 @@ const jsonLd = {
       )}
     </header>
 
-    {toc.length > 1 && (
-      <aside class="post-aside" aria-label="תוכן העניינים">
-        <div class="aside-block">
-          <p class="aside-title mono">תוכן</p>
-          <ol class="toc mono">
-            {toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}
-          </ol>
-        </div>
-        <div class="aside-block">
-          <p class="aside-title mono">פרטים</p>
-          <dl class="facts mono">
-            <dt>תאריך</dt><dd>{isoDate(post.data.date)}</dd>
-            <dt>קריאה</dt><dd>{minutes} דק׳</dd>
-            {post.data.tags.length > 0 && <dt>תגיות</dt>}
-            {post.data.tags.length > 0 && <dd>{post.data.tags.map((t) => <a href={`${base}/tags/${encodeURIComponent(t)}`}>{t}</a>)}</dd>}
-          </dl>
-        </div>
-      </aside>
-    )}
 
     <div class="prose">
       <Content />

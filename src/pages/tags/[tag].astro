@@ -14,7 +14,6 @@ const { tag, posts } = Astro.props;
 <Base title={`#${tag}`} description={`מאמרים בתגית ${tag}`}>
   <section class="list">
     <header class="page-head">
-      <p class="mono kicker">› תגית</p>
       <h1>#{tag}</h1>
     </header>
     <div class="cards">{posts.map((p) => <PostCard post={p} />)}</div>

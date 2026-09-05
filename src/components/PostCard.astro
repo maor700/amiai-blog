@@ -10,7 +10,6 @@ const href = `${base}/blog/${post.id}`;
 ---
 
 <article class="card">
-  {typeof index === 'number' && <span class="card-index mono" aria-hidden="true">{String(index).padStart(3, '0')}</span>}
   {post.data.cover && (
     <a class="card-cover" href={href} tabindex="-1" aria-hidden="true">
       <Image src={post.data.cover} alt="" width="640" height="400" loading="lazy" />

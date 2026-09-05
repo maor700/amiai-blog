@@ -1,17 +1,15 @@
-// תמונות OG נוצרות בזמן build עם sharp (Pango מטפל ב-RTL/bidi נכון; satori לא).
+// תמונות OG נוצרות בזמן build עם sharp (Pango מטפל ב-RTL/bidi נכון).
 import sharp from 'sharp';
 import fs from 'node:fs';
 import path from 'node:path';
-import { DESIGN, SITE } from './site';
+import { SITE } from './site';
 
 const ROOT = process.cwd();
-const FONT_TITLE = path.join(ROOT, 'node_modules/@fontsource/frank-ruhl-libre/files/frank-ruhl-libre-hebrew-700-normal.woff');
-const FONT_MONO = path.join(ROOT, 'node_modules/@fontsource/cousine/files/cousine-hebrew-400-normal.woff');
+const FONT_TITLE = path.join(ROOT, 'node_modules/@fontsource/heebo/files/heebo-hebrew-800-normal.woff');
+const FONT_MONO = path.join(ROOT, 'node_modules/@fontsource/heebo/files/heebo-hebrew-400-normal.woff');
 const W = 1200, H = 630, PAD = 72;
 
-const PALETTE = DESIGN === 'terminal'
-  ? { bg: '#0d0f12', fg: '#e6e9ee', muted: '#9aa3ad', accent: '#e0a94a', overlay: 'rgba(13,15,18,0.78)' }
-  : { bg: '#f3ecdc', fg: '#211b14', muted: '#6d6152', accent: '#7a2e1d', overlay: 'rgba(243,236,220,0.86)' };
+const PALETTE = { bg: '#ffffff', fg: '#242424', muted: '#6b6b6b', accent: '#242424', overlay: 'rgba(255,255,255,0.88)' };
 
 function esc(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -46,9 +44,9 @@ export async function renderOg({ title, subtitle, cover }: { title: string; subt
   layers.push({ input: rule, top: 0, left: 0 });
 
   const titleSize = title.length > 60 ? 235 : title.length > 40 ? 275 : 320; // dpi
-  const t = await text(`<span foreground="${PALETTE.fg}">${esc(title)}</span>`, { fontfile: FONT_TITLE, font: 'Frank Ruhl Libre Bold', width: W - PAD * 2, dpi: titleSize });
-  const s = await text(`<span foreground="${PALETTE.muted}">${esc(subtitle)}</span>`, { fontfile: FONT_MONO, font: 'Cousine', width: W - PAD * 2, dpi: 105 });
-  const b = await text(`<span foreground="${PALETTE.accent}">${esc(SITE.short)}  ·  ${esc(SITE.title)}</span>`, { fontfile: FONT_MONO, font: 'Cousine', width: W - PAD * 2, dpi: 105 });
+  const t = await text(`<span foreground="${PALETTE.fg}">${esc(title)}</span>`, { fontfile: FONT_TITLE, font: 'Heebo ExtraBold', width: W - PAD * 2, dpi: titleSize });
+  const s = await text(`<span foreground="${PALETTE.muted}">${esc(subtitle)}</span>`, { fontfile: FONT_MONO, font: 'Heebo', width: W - PAD * 2, dpi: 105 });
+  const b = await text(`<span foreground="${PALETTE.accent}">${esc(SITE.short)}  ·  ${esc(SITE.title)}</span>`, { fontfile: FONT_MONO, font: 'Heebo', width: W - PAD * 2, dpi: 105 });
 
   const titleTop = Math.max(PAD + 40, Math.round((H - t.info.height) / 2 - 40));
   layers.push({ input: t.data, top: titleTop, left: W - PAD - t.info.width });

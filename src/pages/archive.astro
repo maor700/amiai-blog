@@ -11,7 +11,6 @@ const tags = [...new Set(posts.flatMap((p) => p.data.tags))].sort((a, b) => a.lo
 <Base title="ארכיון" description="כל המאמרים לפי ספר, פרשה, מועד ועיון.">
   <section class="archive">
     <header class="page-head">
-      <p class="mono kicker">› ארכיון</p>
       <h1>לפי ספר ופרשה</h1>
       <p class="page-lede">{posts.length} מאמרים. הסדר בתוך כל ספר הוא סדר הפרשות, לא הכרונולוגיה.</p>
     </header>
