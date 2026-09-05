@@ -1,0 +1,82 @@
+---
+// תגובות חיות: נטענות מהדפדפן מ-/api/comments/<slug>. אם אין מסד נתונים — הקטע נעלם.
+interface Props { slug: string }
+const { slug } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<section class="live-comments" data-slug={slug} data-api={`${base}/api/comments/${slug}`} hidden>
+  <h2 class="comments-title">תגובות <span class="mono count"></span></h2>
+  <ol class="comment-list live-list"></ol>
+  <form class="comment-form" autocomplete="off">
+    <p class="form-replying" hidden>מגיב ל־<b></b> · <button type="button" class="cancel-reply">ביטול</button></p>
+    <label>שם <input name="name" required minlength="2" maxlength="60" /></label>
+    <label>תגובה <textarea name="body" required minlength="3" maxlength="4000" rows="5"></textarea></label>
+    <label class="hp" aria-hidden="true">אתר <input name="website" tabindex="-1" /></label>
+    <input type="hidden" name="parent" />
+    <div class="form-row">
+      <button type="submit" class="btn">שלח תגובה</button>
+      <span class="form-note">התגובה תתפרסם אחרי אישור.</span>
+    </div>
+    <p class="form-msg" role="status"></p>
+  </form>
+</section>
+
+<script>
+  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  const fmt = new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  async function init() {
+    const root = document.querySelector<HTMLElement>('.live-comments');
+    if (!root || root.dataset.ready) return;
+    root.dataset.ready = '1';
+    const api = root.dataset.api!;
+    const list = root.querySelector<HTMLOListElement>('.live-list')!;
+    const form = root.querySelector<HTMLFormElement>('.comment-form')!;
+    const msg = root.querySelector<HTMLElement>('.form-msg')!;
+    const count = root.querySelector<HTMLElement>('.count')!;
+    const replying = root.querySelector<HTMLElement>('.form-replying')!;
+    const parentInput = form.elements.namedItem('parent') as HTMLInputElement;
+
+    type C = { id: number; parent: number | null; name: string; body: string; created_at: string };
+    const render = (cs: C[]) => {
+      count.textContent = cs.length ? `(${cs.length})` : '';
+      const item = (c: C) => `<li class="comment" id="lc-${c.id}"><p class="comment-head"><strong>${esc(c.name)}</strong> · <time datetime="${c.created_at}">${fmt.format(new Date(c.created_at))}</time> · <button type="button" class="reply-btn" data-id="${c.id}" data-name="${esc(c.name)}">הגב</button></p>${c.body.split(/\n\n+/).map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('')}${children(c.id)}</li>`;
+      const children = (id: number): string => { const kids = cs.filter((k) => k.parent === id); return kids.length ? `<ol class="comment-replies">${kids.map(item).join('')}</ol>` : ''; };
+      list.innerHTML = cs.filter((c) => c.parent == null || !cs.some((p) => p.id === c.parent)).map(item).join('');
+    };
+
+    try {
+      const r = await fetch(api, { headers: { Accept: 'application/json' } });
+      const data = await r.json();
+      if (!data.enabled) return;
+      root.hidden = false;
+      render(data.comments);
+    } catch { return; }
+
+    list.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('.reply-btn');
+      if (!b) return;
+      parentInput.value = b.dataset.id!;
+      replying.hidden = false; replying.querySelector('b')!.textContent = b.dataset.name!;
+      (form.elements.namedItem('body') as HTMLTextAreaElement).focus();
+    });
+    root.querySelector('.cancel-reply')!.addEventListener('click', () => { parentInput.value = ''; replying.hidden = true; });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = 'שולח…';
+      const fd = new FormData(form);
+      const payload = Object.fromEntries(fd.entries());
+      try {
+        const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const data = await r.json();
+        if (!r.ok) { msg.textContent = data.error || 'שגיאה'; return; }
+        msg.textContent = 'תודה. התגובה נשלחה ותופיע אחרי אישור.';
+        form.reset(); parentInput.value = ''; replying.hidden = true;
+      } catch { msg.textContent = 'לא הצלחתי לשלוח. נסה שוב.'; }
+    });
+  }
+  init();
+  document.addEventListener('astro:page-load', init);
+</script>

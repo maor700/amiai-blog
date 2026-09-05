@@ -3,8 +3,8 @@ import { Image } from 'astro:assets';
 import type { Post } from '../lib/posts';
 import PostMeta from './PostMeta.astro';
 import { isoDate } from '../lib/dates';
-interface Props { post: Post; index?: number }
-const { post, index } = Astro.props;
+interface Props { post: Post }
+const { post } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const href = `${base}/blog/${post.id}`;
 ---

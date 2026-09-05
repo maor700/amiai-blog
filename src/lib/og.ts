@@ -1,5 +1,5 @@
 // תמונות OG נוצרות בזמן build עם sharp (Pango מטפל ב-RTL/bidi נכון).
-import sharp from 'sharp';
+import sharp, { type OverlayOptions } from 'sharp';
 import fs from 'node:fs';
 import path from 'node:path';
 import { SITE } from './site';
@@ -31,7 +31,7 @@ function findCover(slug: string | null): string | null {
 export async function renderOg({ title, subtitle, cover }: { title: string; subtitle: string; cover: string | null }) {
   const coverPath = findCover(cover);
   let bg = sharp({ create: { width: W, height: H, channels: 4, background: PALETTE.bg } });
-  const layers: sharp.OverlayOptions[] = [];
+  const layers: OverlayOptions[] = [];
   if (coverPath) {
     const img = await sharp(coverPath).resize(W, H, { fit: 'cover', position: 'attention' }).modulate({ saturation: 0.6 }).blur(1.2).toBuffer();
     layers.push({ input: img, top: 0, left: 0 });

@@ -1,0 +1,86 @@
+---
+import Admin from '../../layouts/Admin.astro';
+import { adminEnabled, isAdmin } from '../../lib/admin-auth';
+import { getCommentsStore } from '../../lib/comments-store';
+import { getRepoStore } from '../../lib/repo-store';
+export const prerender = false;
+const authed = isAdmin(Astro.cookies);
+const error = Astro.url.searchParams.get('error');
+const commentsOn = Boolean(getCommentsStore());
+const repo = getRepoStore();
+---
+<Admin title="ניהול">
+  {!authed ? (
+    <form class="login" method="post" action="/api/admin/login">
+      <h1>ניהול am-i.ai</h1>
+      {!adminEnabled() && <p class="notice">ADMIN_PASSWORD לא מוגדר בסביבה (לפחות 8 תווים). בפיתוח: <code>ADMIN_PASSWORD=... npm run dev</code></p>}
+      {error && <p class="status err">סיסמה שגויה</p>}
+      <label>סיסמה <input type="password" name="password" required autofocus /></label>
+      <button class="btn" type="submit">כניסה</button>
+    </form>
+  ) : (
+    <>
+      <header class="admin-head">
+        <h1>ניהול am-i.ai</h1>
+        <nav class="admin-nav">
+          <a href="/">האתר</a>
+          <a href="/admin/edit">פוסט חדש</a>
+          <form method="post" action="/api/admin/login" style="display:inline"><input type="hidden" name="action" value="logout" /><button type="submit">יציאה</button></form>
+        </nav>
+      </header>
+
+      <h2>פוסטים {repo && <span>· מקור: {repo.kind === 'github' ? 'GitHub' : 'קבצים מקומיים'}</span>}</h2>
+      {!repo ? <p class="notice">עריכת פוסטים כבויה: הגדר GITHUB_TOKEN (Fine-grained PAT עם Contents: Read and write על הריפו) ו-GITHUB_REPO.</p>
+        : <ul class="list posts-list" id="posts"><li class="status">טוען…</li></ul>}
+
+      <h2>תגובות</h2>
+      {!commentsOn ? <p class="notice">התגובות כבויות: הגדר DATABASE_URL (Neon Postgres, טיר חינמי) ב-Vercel.</p> : (
+        <>
+          <div class="tabs" role="tablist">
+            <button role="tab" data-status="pending" aria-selected="true">ממתינות</button>
+            <button role="tab" data-status="approved">מאושרות</button>
+            <button role="tab" data-status="spam">ספאם</button>
+          </div>
+          <ul class="list" id="comments"><li class="status">טוען…</li></ul>
+        </>
+      )}
+      <script>
+        const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+        const fmt = new Intl.DateTimeFormat('he-IL', { dateStyle: 'medium', timeStyle: 'short' });
+        // פוסטים
+        const postsEl = document.getElementById('posts');
+        if (postsEl) fetch('/api/admin/posts').then((r) => r.json()).then((d) => {
+          postsEl.innerHTML = (d.posts ?? []).map((s: string) => `<li><a href="/admin/edit?slug=${encodeURIComponent(s)}">${esc(s)}</a><span class="meta"><a href="/blog/${encodeURIComponent(s)}" target="_blank" rel="noopener">צפייה באתר ←</a></span></li>`).join('') || '<li class="status">אין פוסטים</li>';
+        }).catch(() => (postsEl.innerHTML = '<li class="status err">שגיאה בטעינה</li>'));
+        // תגובות
+        const listEl = document.getElementById('comments');
+        let status = 'pending';
+        async function load() {
+          if (!listEl) return;
+          const r = await fetch(`/api/admin/comments?status=${status}`); const d = await r.json();
+          const actions = (c: any) => {
+            const b: string[] = [];
+            if (c.status !== 'approved') b.push(`<button class="btn small" data-a="approve" data-id="${c.id}">אשר</button>`);
+            if (c.status === 'approved') b.push(`<button class="btn small secondary" data-a="unapprove" data-id="${c.id}">הסתר</button>`);
+            if (c.status !== 'spam') b.push(`<button class="btn small secondary" data-a="spam" data-id="${c.id}">ספאם</button>`);
+            b.push(`<button class="btn small danger" data-a="delete" data-id="${c.id}">מחק</button>`);
+            return b.join('');
+          };
+          listEl.innerHTML = (d.comments ?? []).map((c: any) => `<li><div class="meta"><strong>${esc(c.name)}</strong> · ${fmt.format(new Date(c.created_at))} · <a href="/blog/${encodeURIComponent(c.slug)}" target="_blank" rel="noopener">${esc(c.slug)}</a>${c.parent ? ` · תשובה ל-#${c.parent}` : ''}</div><div class="body">${esc(c.body)}</div><div class="row">${actions(c)}</div></li>`).join('') || '<li class="status">אין תגובות</li>';
+        }
+        document.querySelectorAll<HTMLButtonElement>('.tabs [role=tab]').forEach((t) => t.addEventListener('click', () => {
+          document.querySelectorAll('.tabs [role=tab]').forEach((x) => x.setAttribute('aria-selected', 'false'));
+          t.setAttribute('aria-selected', 'true'); status = t.dataset.status!; load();
+        }));
+        listEl?.addEventListener('click', async (e) => {
+          const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-a]'); if (!b) return;
+          if (b.dataset.a === 'delete' && !confirm('למחוק את התגובה (ואת התשובות לה)?')) return;
+          b.disabled = true;
+          await fetch('/api/admin/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: Number(b.dataset.id), action: b.dataset.a }) });
+          load();
+        });
+        load();
+      </script>
+    </>
+  )}
+</Admin>

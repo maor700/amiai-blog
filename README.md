@@ -40,12 +40,29 @@ node scripts/new-post.mjs my-post-slug "כותרת הפוסט"
 | `tags` | לא | רשימה |
 | `draft` | לא | `true` = לא נבנה (נראה רק ב-`npm run dev`) |
 
+## תגובות ועריכה מהדפדפן (אופציונלי, חינמי)
+
+האתר עצמו סטטי. שני דברים רצים כפונקציות serverless על Vercel (טיר Hobby) רק אם מגדירים אותם:
+
+**תגובות** — נשמרות ב-Neon Postgres (טיר חינמי). בעמוד הפוסט מופיע טופס; תגובה חדשה ממתינה לאישור. ההגנות: honeypot, מגבלת 5 תגובות ל-10 דקות לכתובת IP, ואישור ידני.
+1. ב-Vercel: Storage → Create → Neon (או neon.tech ישירות) → מעתיקים את `DATABASE_URL` למשתני הסביבה של הפרויקט.
+2. זה הכול; הטבלה נוצרת לבד בבקשה הראשונה. בלי `DATABASE_URL` קטע התגובות פשוט לא מופיע.
+
+**ניהול** (`/admin`) — כניסה בסיסמה אחת, אישור/מחיקת תגובות, ועריכת פוסטים שנשמרת כ-commit ישירות לריפו (Vercel בונה ומפרסם אוטומטית).
+1. `ADMIN_PASSWORD` — סיסמה של 8 תווים לפחות.
+2. `GITHUB_TOKEN` — Fine-grained personal access token (github.com → Settings → Developer settings → Fine-grained tokens) עם גישה לריפו הזה בלבד והרשאת **Contents: Read and write**. בלי הטוקן, עריכת הפוסטים כבויה (התגובות עדיין עובדות).
+3. אופציונלי: `GITHUB_REPO` (ברירת מחדל `maor700/amiai-blog`), `GITHUB_BRANCH` (ברירת מחדל `master`), `NOTIFY_WEBHOOK_URL` (POST JSON על כל תגובה חדשה — למשל webhook של Slack/Make/n8n).
+
+בפיתוח מקומי (`ADMIN_PASSWORD=xxxxxxxx npm run dev`) התגובות נשמרות ל-`.data/comments.json` והעריכה כותבת לקבצים המקומיים, בלי GitHub ובלי מסד נתונים.
+
+הערה: התגובות הישנות מ-Sanity נשארו כקבצים ב-`content/comments/` ומוצגות כ"תגובות מהארכיון" מעל התגובות החיות.
+
 ## פיתוח ובנייה
 
 ```bash
 npm install
 npm run dev       # שרת פיתוח
-npm run build     # → dist/  (אתר סטטי; כל הוסטינג מתאים)
+npm run build     # → .vercel/output/ (סטטי + פונקציות ל-/api ו-/admin). בלי המתאם: להסיר adapter מ-astro.config.mjs ואז dist/
 npm run preview
 npm run check     # astro check (טיפוסים)
 ```
@@ -68,6 +85,6 @@ Next.js 14, next-sanity, Sanity Studio (`sanity/`), הסכמות, מערכת ה�
 
 ## הוסטינג (Vercel)
 
-- Framework preset: **Astro** (מזוהה אוטומטית). Build: `npm run build`, Output: `dist`.
-- למחוק את משתני הסביבה `SANITY_*` ו-`NEXT_PUBLIC_SANITY_*` מהפרויקט.
+- Framework preset: **Astro** (מזוהה אוטומטית). Build: `npm run build`. הפלט עם מתאם Vercel (`.vercel/output`), אין להגדיר Output Directory ידנית.
+- למחוק את משתני הסביבה `SANITY_*` ו-`NEXT_PUBLIC_SANITY_*` מהפרויקט, ולהוסיף לפי הצורך `DATABASE_URL`, `ADMIN_PASSWORD`, `GITHUB_TOKEN`.
 - Node 22 ומעלה.

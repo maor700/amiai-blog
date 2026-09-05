@@ -198,6 +198,24 @@ html.is-dark .theme-toggle .ico-moon { opacity: 1; transform: none; }
 .comment-head { font-family: var(--font-sans); color: var(--muted); font-size: 0.85rem; }
 .comment-head strong { color: var(--fg); font-weight: 500; }
 
+/* ---------- תגובות חיות + טופס ---------- */
+.live-comments { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--rule); }
+.live-comments .comment-list:empty { display: none; }
+.reply-btn { color: var(--muted); font-size: 0.8rem; text-decoration: underline; }
+.reply-btn:hover { color: var(--fg); }
+.comment-form { margin-top: 2rem; display: grid; gap: 0.9rem; }
+.comment-form label { display: grid; gap: 0.35rem; font-size: 0.875rem; color: var(--muted); }
+.comment-form input, .comment-form textarea { font: inherit; font-family: var(--font-serif); font-size: 1.05rem; color: var(--fg); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.6rem 0.75rem; width: 100%; }
+.comment-form input:focus, .comment-form textarea:focus { outline: none; border-color: var(--fg); }
+.comment-form .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.form-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.btn { font-size: 0.9rem; padding: 0.55rem 1.1rem; border-radius: 999px; background: var(--fg); color: var(--bg); }
+.btn:hover { opacity: 0.85; }
+.form-note, .form-msg { font-size: 0.85rem; color: var(--muted); }
+.form-msg:empty { display: none; }
+.form-replying { font-size: 0.85rem; color: var(--muted); }
+.form-replying button { text-decoration: underline; }
+
 /* ---------- motion ---------- */
 @media (prefers-reduced-motion: no-preference) {
   .hero > *, .post-header > *, .page-head > * { animation: rise 500ms var(--ease) both; }

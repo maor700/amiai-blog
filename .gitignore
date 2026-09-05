@@ -40,3 +40,6 @@ next-env.d.ts
 .astro/
 dist-*/
 preview/
+.data/
+.vercel/
+dist/

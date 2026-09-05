@@ -1,0 +1,103 @@
+---
+import Admin from '../../layouts/Admin.astro';
+import { isAdmin } from '../../lib/admin-auth';
+import { BOOKS, SECTIONS } from '../../content.config';
+export const prerender = false;
+if (!isAdmin(Astro.cookies)) return Astro.redirect('/admin', 303);
+const slug = Astro.url.searchParams.get('slug') ?? '';
+const today = new Date().toISOString().slice(0, 10);
+---
+<Admin title={slug ? `עריכה: ${slug}` : 'פוסט חדש'}>
+  <header class="admin-head">
+    <h1>{slug ? 'עריכת פוסט' : 'פוסט חדש'}</h1>
+    <nav class="admin-nav"><a href="/admin">← ניהול</a></nav>
+  </header>
+  <form id="post-form" data-slug={slug} style="display:grid;gap:1rem">
+    <div class="grid2">
+      <label>slug (כתובת: /blog/‹slug›) <input name="slug" value={slug} readonly={Boolean(slug)} pattern="[a-z0-9][a-z0-9-]{1,80}" required dir="ltr" placeholder="my-post-slug" /></label>
+      <label>תאריך <input name="date" type="date" value={today} required /></label>
+    </div>
+    <label>כותרת <input name="title" required /></label>
+    <label>תיאור (משפט-שניים, מופיע גם ב-OG וב-RSS) <textarea name="description" rows="2"></textarea></label>
+    <div class="grid3">
+      <label>מדור <select name="section">{SECTIONS.map((s) => <option value={s}>{s}</option>)}</select></label>
+      <label>ספר (למדור פרשה) <select name="book"><option value="">—</option>{BOOKS.map((b) => <option value={b}>{b}</option>)}</select></label>
+      <label>פרשה / מועד <input name="parasha_or_moed" placeholder="כי תשא / ספירת העומר" /></label>
+    </div>
+    <div class="grid2">
+      <label>תגיות (מופרדות בפסיק) <input name="tags" /></label>
+      <label>כיתוב לתמונת הכיסוי <input name="coverAlt" /></label>
+    </div>
+    <div class="grid2">
+      <label>תמונת כיסוי (png/jpg/webp; נשמרת כ-cover.* בתיקיית הפוסט) <input name="coverUpload" type="file" accept=".png,.jpg,.jpeg,.webp,.avif" /></label>
+      <label>כיסוי נוכחי <input name="cover" readonly dir="ltr" /></label>
+    </div>
+    <label>
+      <span class="row" style="justify-content:space-between"><span>גוף המאמר (Markdown)</span>
+        <span class="toolbar">
+          <button type="button" data-ins="## ">כותרת</button>
+          <button type="button" data-ins="**" data-wrap="1">מודגש</button>
+          <button type="button" data-ins="> " data-line="1">ציטוט</button>
+          <button type="button" data-ins="[טקסט](https://)">קישור</button>
+          <button type="button" data-ins="![תיאור](./image.png)">תמונה</button>
+        </span></span>
+      <textarea name="body" required></textarea>
+    </label>
+    <label class="row"><input type="checkbox" name="draft" style="width:auto" /> טיוטה (לא מתפרסם)</label>
+    <div class="row">
+      <button class="btn" type="submit" id="save">שמור ופרסם (commit)</button>
+      <span class="status" id="status"></span>
+    </div>
+  </form>
+
+  <script>
+    const form = document.getElementById('post-form') as HTMLFormElement;
+    const status = document.getElementById('status')!;
+    const slug = form.dataset.slug;
+    const f = (n: string) => form.elements.namedItem(n) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+
+    if (slug) {
+      status.textContent = 'טוען…';
+      fetch(`/api/admin/posts?slug=${encodeURIComponent(slug)}`).then((r) => r.json()).then((d) => {
+        if (d.error) { status.textContent = d.error; status.classList.add('err'); return; }
+        for (const k of ['title', 'description', 'date', 'cover', 'coverAlt', 'section', 'book', 'tags', 'body']) (f(k) as HTMLInputElement).value = d[k] ?? '';
+        (f('parasha_or_moed') as HTMLInputElement).value = d.section === 'מועדים' ? d.moed : d.parasha;
+        (f('draft') as HTMLInputElement).checked = Boolean(d.draft);
+        status.textContent = `נטען מ-${d.source === 'github' ? 'GitHub' : 'הקבצים המקומיים'}`;
+      });
+    }
+
+    // סרגל עזר קטן
+    const body = f('body') as HTMLTextAreaElement;
+    document.querySelectorAll<HTMLButtonElement>('.toolbar button').forEach((b) => b.addEventListener('click', () => {
+      const ins = b.dataset.ins!; const s = body.selectionStart, e = body.selectionEnd; const sel = body.value.slice(s, e);
+      let out: string;
+      if (b.dataset.wrap) out = ins + (sel || 'טקסט') + ins;
+      else if (b.dataset.line) out = sel.split('\n').map((l) => ins + l).join('\n') || ins;
+      else out = ins + sel;
+      body.setRangeText(out, s, e, 'end'); body.focus();
+    }));
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.classList.remove('err'); status.textContent = 'שומר…';
+      (document.getElementById('save') as HTMLButtonElement).disabled = true;
+      const section = f('section').value;
+      const payload: any = {
+        slug: f('slug').value.trim(), title: f('title').value, description: f('description').value, date: f('date').value,
+        cover: f('cover').value, coverAlt: f('coverAlt').value, section, book: f('book').value,
+        parasha: section === 'פרשה' ? f('parasha_or_moed').value : '', moed: section === 'מועדים' ? f('parasha_or_moed').value : '',
+        tags: f('tags').value, draft: (f('draft') as HTMLInputElement).checked, body: body.value,
+      };
+      const file = (f('coverUpload') as HTMLInputElement).files?.[0];
+      if (file) payload.coverUpload = { name: file.name, data: await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.readAsDataURL(file); }) };
+      try {
+        const r = await fetch('/api/admin/posts', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const d = await r.json();
+        if (!r.ok) { status.textContent = d.error || 'שגיאה'; status.classList.add('err'); }
+        else { status.textContent = d.source === 'github' ? `נשמר ב-GitHub (${(d.sha || '').slice(0, 7)}). Vercel יבנה ויפרסם תוך דקה-שתיים.` : 'נשמר לקבצים המקומיים.'; if (d.isNew) history.replaceState(null, '', `/admin/edit?slug=${encodeURIComponent(d.slug)}`); (f('slug') as HTMLInputElement).readOnly = true; }
+      } catch { status.textContent = 'שגיאת רשת'; status.classList.add('err'); }
+      (document.getElementById('save') as HTMLButtonElement).disabled = false;
+    });
+  </script>
+</Admin>
