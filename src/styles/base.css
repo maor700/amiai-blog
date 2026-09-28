@@ -211,7 +211,8 @@ html.is-dark .theme-toggle .ico-moon { opacity: 1; transform: none; }
 .comment-form label { display: grid; gap: 0.35rem; font-size: 0.875rem; color: var(--muted); }
 .comment-form input, .comment-form textarea { font: inherit; font-family: var(--font-serif); font-size: 1.05rem; color: var(--fg); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.6rem 0.75rem; width: 100%; }
 .comment-form input:focus, .comment-form textarea:focus { outline: none; border-color: var(--fg); }
-.comment-form .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+/* honeypot: hidden with clip, not a negative offset — in an RTL document `left: -9999px` extends the scrollable width and shows a horizontal scrollbar */
+.comment-form .hp { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .form-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .btn { font-size: 0.9rem; padding: 0.55rem 1.1rem; border-radius: 999px; background: var(--fg); color: var(--bg); }
 .btn:hover { opacity: 0.85; }
